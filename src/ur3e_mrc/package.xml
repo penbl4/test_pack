@@ -70,6 +70,7 @@
   <exec_depend>actionlib</exec_depend>
   <exec_depend>control_msgs</exec_depend>
   <exec_depend>trajectory_msgs</exec_depend>
+  <exec_depend>controller_manager</exec_depend>
   
 
   <!-- The export tag contains other, unspecified, tags -->

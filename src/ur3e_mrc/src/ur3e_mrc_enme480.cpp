@@ -2,6 +2,7 @@
 #include <ur3e_mrc/ur3e_mrc_enme480.h>
 
 #define N_JOINTS 6
+#define CTRL_TO_RUN "scaled_pos_joint_traj_controller"
 
 UR3eArm::UR3eArm()
 {
@@ -24,12 +25,52 @@ UR3eArm::UR3eArm()
 
   sub_comm_ = nh_.subscribe("ur3/command", 10, &UR3eArm::commCallback, this);
   ROS_INFO("Subscribed to ur3 command");
+
+  // Controller manager service to switch controllers
+  ctrl_manager_srv_ = nh_.serviceClient<controller_manager_msgs::SwitchController>("controller_manager/switch_controller");
+  // Controller manager service to list controllers
+  ctrl_list_srv_ = nh_.serviceClient<controller_manager_msgs::ListControllers>("controller_manager/list_controllers");
+
+  ctrl_manager_srv_.waitForExistence();
+  ctrl_list_srv_.waitForExistence();
 }
 
 UR3eArm::~UR3eArm()
 {
   delete trajectory_client_;
   nh_.shutdown();
+}
+
+void UR3eArm::ctrlRunCheck()
+{
+  controller_manager_msgs::ListControllers list_srv;
+  ctrl_list_srv_.call(list_srv);
+  // stopped_controllers_.clear();
+  for (auto &controller : list_srv.response.controller)
+  {
+    // Check if in consistent_controllers
+    // Else:
+    //   Add to stopped_controllers
+    // if (controller.state == "running")
+    if (controller.name == CTRL_TO_RUN)
+    {
+      // auto it = std::find(consistent_controllers_.begin(), consistent_controllers_.end(), controller.name);
+      if (controller.state != "running")
+      {
+        ROS_INFO("Attempting to activate scaled_pos_joint_traj_controller");
+        std::vector<std::string> ctrl_to_run; // = {CTRL_TO_RUN};
+        ctrl_to_run.push_back(CTRL_TO_RUN);
+
+        controller_manager_msgs::SwitchController srv;
+        srv.request.strictness = srv.request.STRICT;
+        srv.request.start_controllers = ctrl_to_run;
+        if (!ctrl_manager_srv_.call(srv))
+        {
+          ROS_ERROR_STREAM("Could not activate scaled_pos_joint_traj_controller");
+        }
+      }
+    }
+  }
 }
 
 void UR3eArm::sendTrajectory(control_msgs::FollowJointTrajectoryGoal goal)
@@ -81,7 +122,7 @@ void UR3eArm::jsCallback(const sensor_msgs::JointState &msg)
 void UR3eArm::commCallback(const ur3e_mrc::command &msg)
 {
   // ROS_INFO("Got ur3e command");
-  if (msg.destination.size() != 6)
+  if (msg.destination.size() != N_JOINTS)
   {
     ROS_INFO("WARNNING: In commCallback- received command size is not 6");
     return;
@@ -153,9 +194,9 @@ int main(int argc, char **argv)
 
   ros::init(argc, argv, "ur3e_mrc_enme480");
 
-  UR3eArm ur3e_mrc;
+  UR3eArm ur3e_mrc_var;
 
-  if (ur3e_mrc.initStatus())
+  if (ur3e_mrc_var.initStatus())
     ros::spin();
   else
     ros::shutdown();

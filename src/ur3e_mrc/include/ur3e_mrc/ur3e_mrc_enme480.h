@@ -16,9 +16,11 @@
 // #include <control_msgs/FollowJointTrajectoryGoal.h>
 #include <actionlib/client/simple_action_client.h>
 
-ros::Publisher chatter_pub;
-ros::Publisher pos_pub;
-ur3e_mrc::position pos_msg;
+#include <controller_manager_msgs/SwitchController.h>
+#include <controller_manager_msgs/ListControllers.h>
+
+// ros::Publisher pos_pub;
+// ur3e_mrc::position pos_msg;
 
 typedef actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> TrajectoryClient;
 
@@ -29,6 +31,11 @@ private:
     TrajectoryClient *trajectory_client_;
     ros::Subscriber sub_js_;
     ros::Subscriber sub_comm_;
+
+    ros::ServiceClient ctrl_manager_srv_;
+    ros::ServiceClient ctrl_list_srv_;
+
+    void ctrlRunCheck();
 
     bool init_status_ = false;
 
@@ -43,6 +50,9 @@ public:
     // control_msgs::FollowJointTrajectoryGoal ur3eTrajectory(); //const ur3e_mrc::position &msg
     bool initStatus();
     actionlib::SimpleClientGoalState getState();
+
+    ros::Publisher pos_pub;
+    ur3e_mrc::position pos_msg;
 
 protected:
 };
