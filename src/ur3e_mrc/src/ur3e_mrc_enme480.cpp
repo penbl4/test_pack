@@ -6,7 +6,7 @@
 
 UR3eArm::UR3eArm()
 {
-  trajectory_client_ = new TrajectoryClient("pos_joint_traj_controller/follow_joint_trajectory", true);
+  trajectory_client_ = new TrajectoryClient("scaled_pos_joint_traj_controller/follow_joint_trajectory", true);
   ROS_INFO_STREAM("Waiting for the joint_trajectory_action server");
   init_status_ = trajectory_client_->waitForServer(ros::Duration(20.0));
   // while (!trajectory_client_->waitForServer(ros::Duration(60)))
@@ -33,6 +33,9 @@ UR3eArm::UR3eArm()
 
   ctrl_manager_srv_.waitForExistence();
   ctrl_list_srv_.waitForExistence();
+
+  ROS_INFO("Running scaled_pos_joint_traj_controller check");
+  ctrlRunCheck();
 }
 
 UR3eArm::~UR3eArm()
